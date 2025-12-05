@@ -1,0 +1,24 @@
+package domain
+
+import "sync"
+
+type Media struct {
+	Title      string           `json:"title"`
+	TotalBytes int64            `json:"total_bytes"`
+	URL        string           `json:"url"`
+	Status     DownloadStatus   `json:"status"`
+	Progress   DownloadProgress `json:"progress"`
+	mu         sync.Mutex
+}
+
+type DownloadProgress struct {
+	Percentage      int      `json:"percentage"`
+	DownloadedBytes int64    `json:"downloaded_bytes"`
+	Logs            []string `json:"logs"`
+}
+
+func (m *Media) AppendLog(log string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Progress.Logs = append(m.Progress.Logs, log)
+}
