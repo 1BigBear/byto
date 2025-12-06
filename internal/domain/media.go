@@ -3,6 +3,7 @@ package domain
 import "sync"
 
 type Media struct {
+	ID         string           `json:"id"`
 	Title      string           `json:"title"`
 	TotalBytes int64            `json:"total_bytes"`
 	URL        string           `json:"url"`
@@ -21,4 +22,18 @@ func (m *Media) AppendLog(log string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.Progress.Logs = append(m.Progress.Logs, log)
+}
+
+func (m *Media) UpdateProgress(downloaded, total int64, percentage int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Progress.DownloadedBytes = downloaded
+	m.TotalBytes = total
+	m.Progress.Percentage = percentage
+}
+
+func (m *Media) SetStatus(status DownloadStatus) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Status = status
 }
