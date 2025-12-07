@@ -61,7 +61,12 @@ func (a *App) UpdateSettings(quality string, parallelDownloads int, downloadPath
 		q = domain.Quality1080p
 	}
 	a.settings.Update(q, parallelDownloads, downloadPath)
-	log.Printf("Settings updated: quality=%s, parallel=%d, path=%s", quality, parallelDownloads, downloadPath)
+	log.Printf("Settings updated in memory: quality=%s, parallel=%d, path=%s", quality, parallelDownloads, downloadPath)
+}
+
+func (a *App) SaveSettings() error {
+	log.Println("Saving settings to file")
+	return a.settings.Save()
 }
 
 func (a *App) SelectDownloadFolder() string {

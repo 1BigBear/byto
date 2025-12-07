@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { DownloadItem } from './components/DownloadItem';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
-import { AddToQueue, GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SelectDownloadFolder, GetDefaultDownloadPath, ShowInFolder } from '../wailsjs/go/main/App';
+import { AddToQueue, GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, SelectDownloadFolder, GetDefaultDownloadPath, ShowInFolder } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
@@ -183,14 +183,6 @@ export default function App() {
         };
     }, []);
 
-    // Sync settings to backend when they change
-    useEffect(() => {
-        if (!isLoading) {
-            const parallel = parallelDownloads === 'unlimited' ? 100 : parseInt(parallelDownloads, 10);
-            UpdateSettings(qualityToBackend[quality] || quality, parallel, downloadPath);
-        }
-    }, [quality, parallelDownloads, downloadPath, isLoading]);
-
     const handleAddUrl = async () => {
         if (!urlInput.trim()) return;
         
@@ -329,12 +321,19 @@ export default function App() {
             {showSettings && (
                 <SettingsPanel
                     downloadPath={downloadPath}
-                    setDownloadPath={setDownloadPath}
                     quality={quality}
-                    setQuality={setQuality}
                     parallelDownloads={parallelDownloads}
-                    setParallelDownloads={setParallelDownloads}
                     onClose={() => setShowSettings(false)}
+                    onSave={async (settings) => {
+                        const parallel = settings.parallelDownloads === 'unlimited' ? 100 : parseInt(settings.parallelDownloads, 10);
+                        await UpdateSettings(qualityToBackend[settings.quality] || settings.quality, parallel, settings.downloadPath);
+                        await SaveSettings();
+                        // Update local state only after successful save
+                        setDownloadPath(settings.downloadPath);
+                        setQuality(settings.quality);
+                        setParallelDownloads(settings.parallelDownloads);
+                        setShowSettings(false);
+                    }}
                 />
             )}
 

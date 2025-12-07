@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { X, FolderOpen } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
@@ -5,32 +6,41 @@ import { SelectDownloadFolder } from '../../wailsjs/go/main/App';
 
 interface SettingsPanelProps {
   downloadPath: string;
-  setDownloadPath: (path: string) => void;
   quality: string;
-  setQuality: (quality: string) => void;
   parallelDownloads: string;
-  setParallelDownloads: (count: string) => void;
   onClose: () => void;
+  onSave: (settings: { downloadPath: string; quality: string; parallelDownloads: string }) => void;
 }
 
 export function SettingsPanel({
-  downloadPath,
-  setDownloadPath,
-  quality,
-  setQuality,
-  parallelDownloads,
-  setParallelDownloads,
-  onClose
+  downloadPath: initialDownloadPath,
+  quality: initialQuality,
+  parallelDownloads: initialParallelDownloads,
+  onClose,
+  onSave
 }: SettingsPanelProps) {
+  // Local state - only applied when Save is clicked
+  const [localDownloadPath, setLocalDownloadPath] = useState(initialDownloadPath);
+  const [localQuality, setLocalQuality] = useState(initialQuality);
+  const [localParallelDownloads, setLocalParallelDownloads] = useState(initialParallelDownloads);
+
   const handleSelectFolder = async () => {
     try {
       const path = await SelectDownloadFolder();
       if (path) {
-        setDownloadPath(path);
+        setLocalDownloadPath(path);
       }
     } catch (error) {
       console.error('Error selecting folder:', error);
     }
+  };
+
+  const handleSave = () => {
+    onSave({
+      downloadPath: localDownloadPath,
+      quality: localQuality,
+      parallelDownloads: localParallelDownloads
+    });
   };
 
   return (
@@ -50,8 +60,8 @@ export function SettingsPanel({
             <div className="flex gap-2">
               <input
                 type="text"
-                value={downloadPath}
-                onChange={(e) => setDownloadPath(e.target.value)}
+                value={localDownloadPath}
+                onChange={(e) => setLocalDownloadPath(e.target.value)}
                 className="flex-1 px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
               />
               <Button 
@@ -69,8 +79,8 @@ export function SettingsPanel({
             <label className="text-gray-300 text-sm">Parallel Downloads</label>
             <p className="text-gray-500 text-xs mb-2">Number of simultaneous downloads</p>
             <select
-              value={parallelDownloads}
-              onChange={(e) => setParallelDownloads(e.target.value)}
+              value={localParallelDownloads}
+              onChange={(e) => setLocalParallelDownloads(e.target.value)}
               className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
             >
               <option value="1">1 (Sequential)</option>
@@ -86,8 +96,8 @@ export function SettingsPanel({
             <label className="text-gray-300 text-sm">Default Video Quality</label>
             <p className="text-gray-500 text-xs mb-2">Preferred quality for downloads</p>
             <select
-              value={quality}
-              onChange={(e) => setQuality(e.target.value)}
+              value={localQuality}
+              onChange={(e) => setLocalQuality(e.target.value)}
               className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
             >
               <option value="360p">360p</option>
@@ -105,7 +115,7 @@ export function SettingsPanel({
           <Button variant="outline" onClick={onClose} className="border-[#262626] hover:bg-[#1f1f1f]">
             Cancel
           </Button>
-          <Button onClick={onClose} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
             Save Changes
           </Button>
         </div>

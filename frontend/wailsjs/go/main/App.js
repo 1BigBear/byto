@@ -34,6 +34,10 @@ export function RemoveFromQueue(arg1) {
   return window['go']['main']['App']['RemoveFromQueue'](arg1);
 }
 
+export function SaveSettings() {
+  return window['go']['main']['App']['SaveSettings']();
+}
+
 export function SelectDownloadFolder() {
   return window['go']['main']['App']['SelectDownloadFolder']();
 }

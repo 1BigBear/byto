@@ -18,6 +18,8 @@ export function PauseSingleDownload(arg1:string):Promise<void>;
 
 export function RemoveFromQueue(arg1:string):Promise<void>;
 
+export function SaveSettings():Promise<void>;
+
 export function SelectDownloadFolder():Promise<string>;
 
 export function SelectDownloadFolderWithDefault(arg1:string):Promise<string>;
