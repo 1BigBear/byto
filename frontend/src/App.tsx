@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Settings, Download, FolderOpen, Plus, Play, Square, RefreshCw } from 'lucide-react';
+import { Settings, Download, FolderOpen, Plus, Play, Square, RefreshCw, Heart } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { DownloadItem } from './components/DownloadItem';
 import { SettingsPanel } from './components/SettingsPanel';
+import { SupportPanel } from './components/SupportPanel';
 import { AddToQueue, GetQueue, RemoveFromQueue, StartDownloads, GetSettings, UpdateSettings, SelectDownloadFolder, GetDefaultDownloadPath, ShowInFolder } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
@@ -86,6 +87,7 @@ export default function App() {
     const [quality, setQuality] = useState('1080p');
     const [parallelDownloads, setParallelDownloads] = useState('3');
     const [showSettings, setShowSettings] = useState(false);
+    const [showSupport, setShowSupport] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     // Load initial data from backend
@@ -287,6 +289,15 @@ export default function App() {
                     <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setShowSupport(true)}
+                        className="border-[#262626] hover:bg-[#1f1f1f]"
+                    >
+                        <Heart className="size-4" />
+                        Support
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setShowSettings(!showSettings)}
                         className="border-[#262626] hover:bg-[#1f1f1f]"
                     >
@@ -311,6 +322,11 @@ export default function App() {
                     setParallelDownloads={setParallelDownloads}
                     onClose={() => setShowSettings(false)}
                 />
+            )}
+
+            {/* Support Panel */}
+            {showSupport && (
+                <SupportPanel onClose={() => setShowSupport(false)} />
             )}
 
             {/* Main Content */}
