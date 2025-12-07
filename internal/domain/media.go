@@ -7,12 +7,14 @@ type Media struct {
 	Title      string           `json:"title"`
 	TotalBytes int64            `json:"total_bytes"`
 	URL        string           `json:"url"`
+	FilePath   string           `json:"file_path"`
 	Status     DownloadStatus   `json:"status"`
 	Progress   DownloadProgress `json:"progress"`
 	mu         sync.Mutex
 	// Callbacks for real-time updates
 	OnProgress     func(id string, progress DownloadProgress) `json:"-"`
 	OnStatusChange func(id string, status DownloadStatus)     `json:"-"`
+	OnTitleChange  func(id string, title string)              `json:"-"`
 }
 
 type DownloadProgress struct {
@@ -23,8 +25,28 @@ type DownloadProgress struct {
 
 func (m *Media) AppendLog(log string) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	m.Progress.Logs = append(m.Progress.Logs, log)
+	progress := m.Progress
+	id := m.ID
+	onProgress := m.OnProgress
+	m.mu.Unlock()
+
+	// Emit progress update with new log
+	if onProgress != nil {
+		go onProgress(id, progress)
+	}
+}
+
+func (m *Media) SetTitle(title string) {
+	m.mu.Lock()
+	m.Title = title
+	id := m.ID
+	onTitleChange := m.OnTitleChange
+	m.mu.Unlock()
+
+	if onTitleChange != nil {
+		go onTitleChange(id, title)
+	}
 }
 
 func (m *Media) UpdateProgress(downloaded, total int64, percentage int) {

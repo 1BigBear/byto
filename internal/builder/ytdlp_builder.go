@@ -2,6 +2,7 @@ package builder
 
 import (
 	"byto/internal/domain"
+	"runtime"
 )
 
 type YTDLPBuilder struct {
@@ -16,28 +17,49 @@ func (y *YTDLPBuilder) ProgressTemplate(template string) *YTDLPBuilder {
 	return y
 }
 
+// Newline forces a newline character at the end of each progress line
+func (y *YTDLPBuilder) Newline() *YTDLPBuilder {
+	y.args = append(y.args, "--newline")
+	return y
+}
+
 func (y *YTDLPBuilder) Quality(quality domain.VideoQuality) *YTDLPBuilder {
+	// Use format selection with fallback to best available
+	// "bestvideo[height<=X]+bestaudio/best[height<=X]/best" means:
+	// 1. Try best video up to X height + best audio
+	// 2. Fall back to combined best up to X height
+	// 3. Fall back to absolute best available
 	switch quality {
 	case domain.Quality360p:
-		y.args = append(y.args, "-f", "best[height<=360]")
+		y.args = append(y.args, "-f", "bestvideo[height<=360]+bestaudio/best[height<=360]/best")
 	case domain.Quality480p:
-		y.args = append(y.args, "-f", "best[height<=480]")
+		y.args = append(y.args, "-f", "bestvideo[height<=480]+bestaudio/best[height<=480]/best")
 	case domain.Quality720p:
-		y.args = append(y.args, "-f", "best[height<=720]")
+		y.args = append(y.args, "-f", "bestvideo[height<=720]+bestaudio/best[height<=720]/best")
 	case domain.Quality1080p:
-		y.args = append(y.args, "-f", "best[height<=1080]")
+		y.args = append(y.args, "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best")
 	case domain.Quality1440p:
-		y.args = append(y.args, "-f", "best[height<=1440]")
+		y.args = append(y.args, "-f", "bestvideo[height<=1440]+bestaudio/best[height<=1440]/best")
 	case domain.Quality2160p:
-		y.args = append(y.args, "-f", "best[height<=2160]")
+		y.args = append(y.args, "-f", "bestvideo[height<=2160]+bestaudio/best[height<=2160]/best")
 	default:
-		y.args = append(y.args, "-f", "best")
+		y.args = append(y.args, "-f", "bestvideo+bestaudio/best")
 	}
 	return y
 }
 
 func (y *YTDLPBuilder) DownloadPath(path string) *YTDLPBuilder {
-	y.args = append(y.args, "-o", path+"/%(title)s.%(ext)s")
+	y.args = append(y.args, "-o", path+"/%(title).100s.%(ext)s")
+	return y
+}
+
+// SafeFilenames adds platform-appropriate filename restrictions
+func (y *YTDLPBuilder) SafeFilenames() *YTDLPBuilder {
+	if runtime.GOOS == "windows" {
+		y.args = append(y.args, "--windows-filenames")
+	} else {
+		y.args = append(y.args, "--restrict-filenames")
+	}
 	return y
 }
 

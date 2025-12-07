@@ -3,23 +3,28 @@ package parser
 import (
 	"errors"
 	"regexp"
+	"strings"
 )
 
 type YTDLPDownloadParser struct{}
 
-// [byto:title] %(info.title)s [byto:downloaded_bytes] %(progress.downloaded_bytes)d [byto:total_bytes] %(progress.total_bytes)d
-var logRegex = regexp.MustCompile(`\[byto:title\]\s+(.*?)\s+\[byto:downloaded_bytes\]\s+(\d+)\s+\[byto:total_bytes\]\s+(\d+)`)
+// Format: [byto] <title> [downloaded] <bytes> [total] <bytes|NA> [frag] <index|NA> [frags] <count|NA>
+// Title is captured between [byto] and [downloaded] markers
+var logRegex = regexp.MustCompile(`\[byto\]\s+(.+?)\s+\[downloaded\]\s+(\d+|NA)\s+\[total\]\s+(\d+|NA)\s+\[frag\]\s+(\d+|NA)\s+\[frags\]\s+(\d+|NA)$`)
 
 func (p YTDLPDownloadParser) Parse(input string) (map[string]string, error) {
+	input = strings.TrimSpace(input)
 	matches := logRegex.FindStringSubmatch(input)
-	if len(matches) < 4 {
+	if len(matches) < 6 {
 		return nil, errors.New("failed to parse log line: format mismatch")
 	}
 
 	result := make(map[string]string)
-	result["title"] = matches[1]
+	result["title"] = strings.TrimSpace(matches[1])
 	result["downloaded_bytes"] = matches[2]
 	result["total_bytes"] = matches[3]
+	result["fragment_index"] = matches[4]
+	result["fragment_count"] = matches[5]
 
 	return result, nil
 }

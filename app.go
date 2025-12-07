@@ -8,6 +8,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	goRuntime "runtime"
 
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -35,13 +38,91 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
 }
 
-func (a *App) AddToQueue(url string) {
-	log.Printf("Adding to queue: %s", url)
-	a.queue.Add(&domain.Media{
-		ID:     uuid.New().String(),
-		URL:    url,
-		Status: domain.Pending,
+func (a *App) GetSettings() *domain.Setting {
+	return a.settings
+}
+
+func (a *App) UpdateSettings(quality string, parallelDownloads int, downloadPath string) {
+	var q domain.VideoQuality
+	switch quality {
+	case "360p":
+		q = domain.Quality360p
+	case "480p":
+		q = domain.Quality480p
+	case "720p":
+		q = domain.Quality720p
+	case "1080p":
+		q = domain.Quality1080p
+	case "1440p":
+		q = domain.Quality1440p
+	case "2160p":
+		q = domain.Quality2160p
+	default:
+		q = domain.Quality1080p
+	}
+	a.settings.Update(q, parallelDownloads, downloadPath)
+	log.Printf("Settings updated: quality=%s, parallel=%d, path=%s", quality, parallelDownloads, downloadPath)
+}
+
+func (a *App) SelectDownloadFolder() string {
+	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select Download Folder",
 	})
+	if err != nil {
+		log.Printf("Error selecting folder: %v", err)
+		return ""
+	}
+	return path
+}
+
+func (a *App) ShowInFolder(filePath string) {
+	log.Printf("ShowInFolder called with path: %s", filePath)
+	var cmd *exec.Cmd
+	switch goRuntime.GOOS {
+	case "windows":
+		// Check if it's a directory or file
+		info, err := os.Stat(filePath)
+		if err != nil {
+			log.Printf("Error checking path: %v", err)
+			return
+		}
+		if info.IsDir() {
+			// Open the folder directly
+			cmd = exec.Command("explorer", filePath)
+		} else {
+			// Select the file in explorer
+			cmd = exec.Command("explorer", "/select,", filePath)
+		}
+	case "darwin":
+		cmd = exec.Command("open", "-R", filePath)
+	default: // Linux
+		cmd = exec.Command("xdg-open", filePath)
+	}
+	if err := cmd.Start(); err != nil {
+		log.Printf("Error opening folder: %v", err)
+	}
+}
+
+func (a *App) GetDefaultDownloadPath() string {
+	return "./downloads"
+}
+
+func (a *App) AddToQueue(url string) string {
+	id := uuid.New().String()
+	log.Printf("Adding to queue: %s with id: %s", url, id)
+	a.queue.Add(&domain.Media{
+		ID:       id,
+		URL:      url,
+		Title:    "Detecting...",
+		FilePath: a.settings.DownloadPath,
+		Status:   domain.Pending,
+		Progress: domain.DownloadProgress{
+			Percentage:      0,
+			DownloadedBytes: 0,
+			Logs:            []string{},
+		},
+	})
+	return id
 }
 
 func (a *App) RemoveFromQueue(id string) error {
@@ -56,24 +137,32 @@ func (a *App) GetQueue() []*domain.Media {
 func (a *App) StartDownloads() {
 	log.Println("Starting downloads")
 	if a.settings == nil {
-		// Default settings if nil
-		a.settings = &domain.Setting{
-			Quality:           domain.Quality1080p,
-			ParallelDownloads: 3,
-			DownloadPath:      "./downloads",
-		}
+		a.settings = domain.NewSetting()
 	}
 
 	queueItems := a.queue.GetAll()
 	semaphore := make(chan struct{}, a.settings.ParallelDownloads)
 
+	// Collect pending/failed items in order
+	var pendingItems []*domain.Media
 	for _, media := range queueItems {
-		if media.Status == domain.Pending {
-			// Attach callbacks
+		if media.Status == domain.Pending || media.Status == domain.Failed {
+			// Attach callbacks - capture the media ID to avoid closure issues
+			mediaID := media.ID
 			media.OnProgress = func(id string, progress domain.DownloadProgress) {
+				// Get the current media state to include title
+				currentMedia, err := a.queue.Get(id)
+				title := "Detecting..."
+				totalBytes := int64(0)
+				if err == nil && currentMedia != nil {
+					title = currentMedia.Title
+					totalBytes = currentMedia.TotalBytes
+				}
 				runtime.EventsEmit(a.ctx, "download_progress", map[string]interface{}{
-					"id":       id,
-					"progress": progress,
+					"id":          id,
+					"title":       title,
+					"total_bytes": totalBytes,
+					"progress":    progress,
 				})
 			}
 
@@ -84,18 +173,40 @@ func (a *App) StartDownloads() {
 				})
 			}
 
-			go func(m *domain.Media) {
+			media.OnTitleChange = func(id string, title string) {
+				runtime.EventsEmit(a.ctx, "download_title", map[string]interface{}{
+					"id":    id,
+					"title": title,
+				})
+			}
+
+			pendingItems = append(pendingItems, media)
+			_ = mediaID // used in callbacks via closure
+		}
+	}
+
+	// Use a job channel to maintain FIFO order
+	jobs := make(chan *domain.Media, len(pendingItems))
+	for _, media := range pendingItems {
+		jobs <- media
+	}
+	close(jobs)
+
+	// Start workers that pull from the job channel in order
+	for i := 0; i < a.settings.ParallelDownloads; i++ {
+		go func() {
+			for m := range jobs {
 				semaphore <- struct{}{}
-				defer func() { <-semaphore }()
 
 				m.SetStatus(domain.InProgress)
 				log.Printf("Processing item: %s", m.URL)
 
-				// Initialize builder
+				// Initialize builder - use media's own FilePath, not current settings
 				b := builder.NewYTDLPBuilder().
 					URL(m.URL).
 					Quality(a.settings.Quality).
-					DownloadPath(a.settings.DownloadPath)
+					DownloadPath(m.FilePath).
+					SafeFilenames()
 
 				cmd := &command.DownloadCommand{
 					Builder: b,
@@ -108,7 +219,9 @@ func (a *App) StartDownloads() {
 				} else {
 					log.Printf("Download completed: %s", m.URL)
 				}
-			}(media)
-		}
+
+				<-semaphore
+			}
+		}()
 	}
 }
