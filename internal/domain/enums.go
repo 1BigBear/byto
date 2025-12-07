@@ -18,4 +18,5 @@ const (
 	InProgress
 	Completed
 	Failed
+	Paused
 )

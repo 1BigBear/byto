@@ -143,10 +143,15 @@ func (a *App) StartDownloads() {
 	queueItems := a.queue.GetAll()
 	semaphore := make(chan struct{}, a.settings.ParallelDownloads)
 
-	// Collect pending/failed items in order
+	// Collect pending/failed/paused items in order
 	var pendingItems []*domain.Media
 	for _, media := range queueItems {
-		if media.Status == domain.Pending || media.Status == domain.Failed {
+		if media.Status == domain.Pending || media.Status == domain.Failed || media.Status == domain.Paused {
+			// Create a context for cancellation
+			ctx, cancelFunc := context.WithCancel(context.Background())
+			media.Ctx = ctx
+			media.CancelFunc = cancelFunc
+
 			// Attach callbacks - capture the media ID to avoid closure issues
 			mediaID := media.ID
 			media.OnProgress = func(id string, progress domain.DownloadProgress) {
@@ -213,9 +218,15 @@ func (a *App) StartDownloads() {
 				}
 
 				if err := cmd.Execute(m); err != nil {
-					m.SetStatus(domain.Failed)
-					log.Printf("Download failed for %s: %v", m.URL, err)
-					m.AppendLog(fmt.Sprintf("Download failed: %v", err))
+					if err == context.Canceled {
+						// Download was paused, set status to Paused
+						m.SetStatus(domain.Paused)
+						log.Printf("Download paused for %s", m.URL)
+					} else {
+						m.SetStatus(domain.Failed)
+						log.Printf("Download failed for %s: %v", m.URL, err)
+						m.AppendLog(fmt.Sprintf("Download failed: %v", err))
+					}
 				} else {
 					log.Printf("Download completed: %s", m.URL)
 				}
@@ -223,5 +234,16 @@ func (a *App) StartDownloads() {
 				<-semaphore
 			}
 		}()
+	}
+}
+
+func (a *App) PauseDownloads() {
+	log.Println("Pausing all downloads")
+	queueItems := a.queue.GetAll()
+
+	for _, media := range queueItems {
+		if media.Status == domain.InProgress {
+			media.Cancel()
+		}
 	}
 }

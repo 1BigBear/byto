@@ -12,6 +12,8 @@ export function GetSettings():Promise<domain.Setting>;
 
 export function Greet(arg1:string):Promise<string>;
 
+export function PauseDownloads():Promise<void>;
+
 export function RemoveFromQueue(arg1:string):Promise<void>;
 
 export function SelectDownloadFolder():Promise<string>;

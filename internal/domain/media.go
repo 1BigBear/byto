@@ -1,6 +1,9 @@
 package domain
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 type Media struct {
 	ID         string           `json:"id"`
@@ -11,7 +14,10 @@ type Media struct {
 	Status     DownloadStatus   `json:"status"`
 	Progress   DownloadProgress `json:"progress"`
 	mu         sync.Mutex
-	// Callbacks for real-time updates
+	// Context for cancellation
+	Ctx        context.Context    `json:"-"`
+	CancelFunc context.CancelFunc `json:"-"`
+
 	OnProgress     func(id string, progress DownloadProgress) `json:"-"`
 	OnStatusChange func(id string, status DownloadStatus)     `json:"-"`
 	OnTitleChange  func(id string, title string)              `json:"-"`
@@ -67,5 +73,15 @@ func (m *Media) SetStatus(status DownloadStatus) {
 	m.Status = status
 	if m.OnStatusChange != nil {
 		go m.OnStatusChange(m.ID, m.Status)
+	}
+}
+
+func (m *Media) Cancel() {
+	m.mu.Lock()
+	cancelFunc := m.CancelFunc
+	m.mu.Unlock()
+
+	if cancelFunc != nil {
+		cancelFunc()
 	}
 }

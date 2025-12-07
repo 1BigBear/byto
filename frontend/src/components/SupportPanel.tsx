@@ -29,7 +29,7 @@ export function SupportPanel({ onClose }: SupportPanelProps) {
             onClick={() => openLink('https://github.com/OmarNaru1110/byto')}
           >
             <Star className="size-4" />
-            Star byto on GitHub
+            Star/Contribute to byto on GitHub
           </Button>
           <Button
             variant="outline"

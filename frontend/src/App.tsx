@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Settings, Download, FolderOpen, Plus, Play, Square, RefreshCw, Heart } from 'lucide-react';
+import { Settings, Download, FolderOpen, Plus, Play, Pause, RefreshCw, Heart } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
 import { DownloadItem } from './components/DownloadItem';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
-import { AddToQueue, GetQueue, RemoveFromQueue, StartDownloads, GetSettings, UpdateSettings, SelectDownloadFolder, GetDefaultDownloadPath, ShowInFolder } from '../wailsjs/go/main/App';
+import { AddToQueue, GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, GetSettings, UpdateSettings, SelectDownloadFolder, GetDefaultDownloadPath, ShowInFolder } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
@@ -17,6 +17,7 @@ const statusMap: Record<number, 'pending' | 'downloading' | 'paused' | 'complete
     1: 'downloading', // InProgress
     2: 'completed',   // Completed
     3: 'error',       // Failed
+    4: 'paused',      // Paused
 };
 
 // Map frontend quality string to backend
@@ -212,29 +213,32 @@ export default function App() {
         }
     };
 
-    const handleStartAll = async () => {
-        try {
-            await StartDownloads();
-            // Status updates will come from backend events (download_status)
-        } catch (error) {
-            console.error('Error starting downloads:', error);
+    const handleToggleAll = async () => {
+        if (activeDownloads > 0) {
+            // Pause all downloading items
+            try {
+                await PauseDownloads();
+                // Status updates will come from backend events (download_status)
+            } catch (error) {
+                console.error('Error pausing downloads:', error);
+            }
+        } else {
+            // Start downloads
+            try {
+                await StartDownloads();
+                // Status updates will come from backend events (download_status)
+            } catch (error) {
+                console.error('Error starting downloads:', error);
+            }
         }
     };
 
-    const handleStopAll = () => {
-        setDownloads(downloads.map(d =>
-            d.status === 'downloading'
-                ? { ...d, status: 'paused' }
-                : d
-        ));
-    };
-
-    const handleDownloadAction = (id: string, action: 'start' | 'pause' | 'stop') => {
+    const handleDownloadAction = (id: string, action: 'start' | 'pause' | 'resume' | 'delete') => {
+        // Individual item actions - status updates will come from backend events
         setDownloads(downloads.map(d => {
             if (d.id === id) {
-                if (action === 'start') return { ...d, status: 'downloading' };
+                if (action === 'start' || action === 'resume') return { ...d, status: 'downloading' };
                 if (action === 'pause') return { ...d, status: 'paused' };
-                if (action === 'stop') return { ...d, status: 'paused' };
             }
             return d;
         }));
@@ -360,13 +364,18 @@ export default function App() {
                                 <span>{downloads.filter(d => d.status === 'completed').length} completed</span>
                             </div>
                             <div className="flex gap-2">
-                                <Button onClick={handleStartAll}>
-                                    <Play className="size-4" />
-                                    Start
-                                </Button>
-                                <Button variant="outline" onClick={handleStopAll} className="border-[#262626] hover:bg-[#1f1f1f]">
-                                    <Square className="size-4" />
-                                    Stop All
+                                <Button onClick={handleToggleAll}>
+                                    {activeDownloads > 0 ? (
+                                        <>
+                                            <Pause className="size-4" />
+                                            Pause
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Play className="size-4" />
+                                            Start
+                                        </>
+                                    )}
                                 </Button>
                             </div>
                         </div>

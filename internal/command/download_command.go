@@ -5,6 +5,7 @@ import (
 	"byto/internal/builder"
 	"byto/internal/domain"
 	"byto/internal/parser"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -33,7 +34,14 @@ func (c *DownloadCommand) Execute(args any) error {
 	log.Printf("DownloadCommand: Configured YTDLP builder progress template.")
 
 	ucmd := c.Builder.Build()
-	cmd := exec.Command("yt-dlp", ucmd...)
+
+	// Use context for cancellation support
+	ctx := media.Ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	cmd := exec.CommandContext(ctx, "yt-dlp", ucmd...)
 	log.Printf("DownloadCommand: Executing command: yt-dlp %v", ucmd)
 
 	stdout, err := cmd.StdoutPipe()
@@ -116,6 +124,11 @@ func (c *DownloadCommand) Execute(args any) error {
 	go processOutput(stderr, "stderr")
 
 	if err := cmd.Wait(); err != nil {
+		// Check if the error is due to context cancellation (pause)
+		if ctx.Err() == context.Canceled {
+			log.Printf("DownloadCommand: Download paused for media: %s", media.URL)
+			return context.Canceled
+		}
 		media.SetStatus(domain.Failed)
 		log.Printf("DownloadCommand: yt-dlp command failed for media %s: %v", media.URL, err)
 		return err
