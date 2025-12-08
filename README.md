@@ -1,8 +1,63 @@
 # byto
-A lightweight GUI for yt-dlp, simplifying video downloads
+
+> A modern, lightweight, and powerful GUI for [yt-dlp](https://github.com/yt-dlp/yt-dlp), designed to simplify video downloads.
+
+![byto wallpaper](/assets/bytologowallpaper.png)
+
+**byto** wraps the complexity of the command-line interface into a beautiful, easy-to-use desktop application. Whether you're downloading a single media or archiving a playlist, byto handles it with efficiency and style.
 
 ---
 
-**Disclaimer:**  
-byto is a neutral graphical interface built to simplify interaction with yt-dlp. It does not promote or facilitate piracy, nor does it include any feature intended to bypass digital rights management. Users are solely responsible for ensuring that their use of this software complies with all applicable laws and with the terms of service of the platforms they access. The developers are not liable for any misuse of the software.
+## Key Features
 
+- **Modern UI**: Built with React and modern design principles, offering a clean, dark-themed interface.
+- **Smart Queue System**: Add multiple URLs, prioritize them, and manage your download queue effortlessly.
+- **Parallel Downloads**: Maximize your bandwidth by downloading multiple videos simultaneously.
+- **Auto-Dependency Management**: Byto automatically detects, downloads, and updates [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://www.ffmpeg.org/) for you. No manual setup required.
+- **Quality Control**: Select your preferred video resolution, from efficient **360p** up to crisp **4K (2160p)**.
+- **Real-time Logs**: View detailed logs for every download to understand exactly what's happening.
+
+## Technology Stack
+
+Byto relies on a robust stack to deliver high performance and a small footprint:
+
+- **Backend**: [Go](https://go.dev/) (powered by the [Wails](https://wails.io/) framework)
+- **Frontend**: [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), and [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Core Engine**: [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+
+## Getting Started
+
+### Installation
+*(Download the latest binary from the Releases page)*
+
+### Building from Source
+If you are a developer and want to build Byto yourself, please check our [Contribution Guide](CONTRIBUTING.md).
+
+## Usage
+
+1.  **Launch Byto**.
+2.  **Dependencies Check**: On first run, Byto will check for [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [ffmpeg](https://www.ffmpeg.org/). If missing, simply click the "Download" or "Update" prompts to install them automatically.
+3.  **Add Downloads**:
+    - Paste a video URL into the input field.
+    - (Optional) Select a specific download path.
+    - Click **Add** to queue the video.
+4.  **Manage Queue**:
+    - Click **Start Downloads** to begin processing the queue.
+    - Use settings to adjust the number of parallel downloads.
+5.  **View Progress**: Watch the progress bars and status updates in real-time.
+
+> **Note**: Make sure that all dependencies are downloaded before starting. If something downloads keep failing, check for updates in the settings.
+
+## Contributing
+
+Contributions are welcome! If you have ideas for new features or have found a bug, please check out our [Contribution Guide](CONTRIBUTING.md) to get started.
+
+## License
+
+This project is released into the public domain under the [The Unlicense](LICENSE).
+
+---
+
+### Disclaimer
+**byto** is a neutral graphical interface built to simplify interaction with [yt-dlp](https://github.com/yt-dlp/yt-dlp). It does not promote or facilitate piracy, nor does it include any feature intended to bypass digital rights management. Users are solely responsible for ensuring that their use of this software complies with all applicable laws and with the terms of service of the platforms they access. The developers are not liable for any misuse of the software.
