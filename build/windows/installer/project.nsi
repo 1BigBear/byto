@@ -1,3 +1,4 @@
+!define ARG_WAILS_AMD64_BINARY "D:\Computer Science\Projects\byto\build\bin\byto.exe"
 Unicode true
 
 ####
