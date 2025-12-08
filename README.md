@@ -31,9 +31,36 @@ Byto relies on a robust stack to deliver high performance and a small footprint:
 ### Installation
 
 1. Download the latest binary for your platform from the [Releases](https://github.com/OmarNaru1110/byto/releases) page
-2. Extract and run the application
+2. Extract the archive
+3. Follow the platform-specific instructions below:
 
-> ⚠️ **Windows Users**: You may see a Windows SmartScreen warning because the app is not code-signed. This is normal for open-source software. Click **"More info"** → **"Run anyway"** to proceed safely.
+#### Windows
+- Run `byto.exe`
+- You may see a SmartScreen warning (the app is not code-signed). Click **"More info"** → **"Run anyway"**
+
+#### macOS
+- Open `byto.app`
+- If you see a Gatekeeper warning, right-click the app → **Open** → **Open**
+
+#### Linux
+Byto uses GTK3 and WebKit2GTK for its UI. These are system libraries that must be installed on your machine (they are not bundled with the binary).
+
+1. Install the required dependencies:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install libgtk-3-0 libwebkit2gtk-4.0-37
+   
+   # Fedora
+   sudo dnf install gtk3 webkit2gtk3
+   
+   # Arch
+   sudo pacman -S gtk3 webkit2gtk
+   ```
+2. Make the binary executable and run:
+   ```bash
+   chmod +x byto
+   ./byto
+   ```
 
 ### Building from Source
 If you are a developer and want to build Byto yourself, please check our [Contribution Guide](CONTRIBUTING.md).
