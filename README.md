@@ -30,22 +30,26 @@ Byto relies on a robust stack to deliver high performance and a small footprint:
 
 ### Installation
 
-1. Download the latest binary for your platform from the [Releases](https://github.com/OmarNaru1110/byto/releases) page
-2. Extract the archive
-3. Follow the platform-specific instructions below:
+Download the latest release for your platform from the [Releases](https://github.com/OmarNaru1110/byto/releases) page.
 
 #### Windows
-- Run `byto.exe`
-- You may see a SmartScreen warning (the app is not code-signed). Click **"More info"** → **"Run anyway"**
+1. Download `byto-windows-amd64-installer.zip`
+2. Extract and run the installer (`.exe`)
+3. You may see a SmartScreen warning (the app is not code-signed). Click **"More info"** → **"Run anyway"**
+4. Follow the installation wizard
 
 #### macOS
-- Open `byto.app`
-- If you see a Gatekeeper warning, right-click the app → **Open** → **Open**
+1. Download `byto-darwin-universal.zip`
+2. Extract the archive
+3. **Option A**: Open `byto.app` directly
+4. **Option B**: Run the `byto.pkg` installer
+5. If you see a Gatekeeper warning, right-click the app → **Open** → **Open**
 
 #### Linux
 Byto uses GTK3 and WebKit2GTK for its UI. These are system libraries that must be installed on your machine (they are not bundled with the binary).
 
-1. Install the required dependencies:
+1. Download `byto-linux-amd64.zip` and extract it
+2. Install the required dependencies:
    ```bash
    # Ubuntu/Debian
    sudo apt install libgtk-3-0 libwebkit2gtk-4.0-37
@@ -56,10 +60,10 @@ Byto uses GTK3 and WebKit2GTK for its UI. These are system libraries that must b
    # Arch
    sudo pacman -S gtk3 webkit2gtk
    ```
-2. Make the binary executable and run:
+3. Make the binary executable and run:
    ```bash
-   chmod +x byto
-   ./byto
+   chmod +x byto-linux-amd64
+   ./byto-linux-amd64
    ```
 
 ### Building from Source
