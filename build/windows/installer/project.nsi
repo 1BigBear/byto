@@ -1,4 +1,5 @@
-!define ARG_WAILS_AMD64_BINARY "D:\Computer Science\Projects\byto\build\bin\byto.exe"
+; Uncomment below for local NSIS debugging (conflicts with wails build --nsis)
+; !define ARG_WAILS_AMD64_BINARY "D:\Computer Science\Projects\byto\build\bin\byto.exe"
 Unicode true
 
 ####
