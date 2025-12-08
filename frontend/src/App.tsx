@@ -375,21 +375,23 @@ export default function App() {
                                 <span className="mx-2">•</span>
                                 <span>{downloads.filter(d => d.status === 'completed').length} completed</span>
                             </div>
-                            <div className="flex gap-2">
-                                <Button onClick={handleToggleAll}>
-                                    {activeDownloads > 0 ? (
-                                        <>
-                                            <Pause className="size-4" />
-                                            Pause
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Play className="size-4" />
-                                            Start
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
+                            {downloads.length > 0 && (
+                                <div className="flex gap-2">
+                                    <Button onClick={handleToggleAll}>
+                                        {activeDownloads > 0 ? (
+                                            <>
+                                                <Pause className="size-4" />
+                                                Pause
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play className="size-4" />
+                                                Start
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
