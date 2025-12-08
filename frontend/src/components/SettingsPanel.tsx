@@ -290,7 +290,7 @@ export function SettingsPanel({
                 {updateState.status === 'ready-to-install' && (
                   <Button
                     size="sm"
-                    className="bg-green-600 hover:bg-green-700"
+                    className="!bg-green-600 !hover:bg-green-700"
                     onClick={handleInstallUpdate}
                   >
                     <RefreshCw className="size-4 mr-2" />
