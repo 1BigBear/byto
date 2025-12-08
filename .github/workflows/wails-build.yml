@@ -28,7 +28,7 @@ jobs:
             platform: 'windows/amd64'
             os: 'windows-latest'
             artifact-name: 'byto-windows-amd64-installer'
-            artifact-path: 'build/bin/*-installer.exe'
+            artifact-path: 'build/bin/'
             nsis: true
           - name: 'byto'
             platform: 'darwin/universal'
@@ -53,6 +53,12 @@ jobs:
           package: false
           nsis: ${{ matrix.build.nsis }}
           go-version: '1.23'
+
+      - name: List build output
+        shell: bash
+        run: |
+          echo "Contents of build/bin/:"
+          ls -la build/bin/ || echo "build/bin/ not found"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
