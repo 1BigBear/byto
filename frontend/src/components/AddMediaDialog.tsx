@@ -93,12 +93,6 @@ export function AddMediaDialog({ url, open, onClose, onSuccess }: AddMediaDialog
                     <div className="py-8 text-center text-gray-400">Loading...</div>
                 ) : (
                     <div className="space-y-4 py-4">
-                        {/* URL Preview */}
-                        <div>
-                            <label className="text-gray-300 text-sm">URL</label>
-                            <p className="text-gray-500 text-xs mt-1 truncate">{url}</p>
-                        </div>
-
                         {/* Quality Selection */}
                         <div>
                             <label className="text-gray-300 text-sm">Video Quality</label>

@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	goRuntime "runtime"
 
 	"github.com/google/uuid"
@@ -64,6 +65,14 @@ func (a *App) SelectDownloadFolder() string {
 func (a *App) SelectDownloadFolderWithDefault(defaultPath string) string {
 	if defaultPath == "" {
 		defaultPath = a.mediaDefaults.DownloadPath
+	}
+	// Check if the path exists, fallback to Downloads if not
+	if defaultPath != "" {
+		if _, err := os.Stat(defaultPath); os.IsNotExist(err) {
+			home, _ := os.UserHomeDir()
+			defaultPath = filepath.Join(home, "Downloads")
+			log.Printf("Saved path doesn't exist, falling back to: %s", defaultPath)
+		}
 	}
 	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
 		Title:            "Select Download Folder",
