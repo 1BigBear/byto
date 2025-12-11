@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { FolderOpen, RefreshCw, Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { RefreshCw, Download, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { SelectDownloadFolder, GetAppVersion, PerformFullUpdate, DownloadAppUpdate, LaunchInstaller } from '../../wailsjs/go/main/App';
+import { GetAppVersion, PerformFullUpdate, DownloadAppUpdate, LaunchInstaller } from '../../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
 
 interface SettingsPanelProps {
-  downloadPath: string;
-  quality: string;
   parallelDownloads: string;
   onClose: () => void;
-  onSave: (settings: { downloadPath: string; quality: string; parallelDownloads: string }) => void;
+  onSave: (settings: { parallelDownloads: string }) => void;
 }
 
 type UpdateStatus = 'idle' | 'checking' | 'ytdlp-updating' | 'app-checking' | 'update-available' | 'downloading' | 'ready-to-install' | 'done' | 'error';
@@ -33,17 +31,13 @@ interface UpdateState {
 }
 
 export function SettingsPanel({
-  downloadPath: initialDownloadPath,
-  quality: initialQuality,
   parallelDownloads: initialParallelDownloads,
   onClose,
   onSave
 }: SettingsPanelProps) {
   // Local state - only applied when Save is clicked
-  const [localDownloadPath, setLocalDownloadPath] = useState(initialDownloadPath);
-  const [localQuality, setLocalQuality] = useState(initialQuality);
   const [localParallelDownloads, setLocalParallelDownloads] = useState(initialParallelDownloads);
-  
+
   // Update state
   const [appVersion, setAppVersion] = useState('');
   const [updateState, setUpdateState] = useState<UpdateState>({
@@ -81,31 +75,18 @@ export function SettingsPanel({
     };
   }, []);
 
-  const handleSelectFolder = async () => {
-    try {
-      const path = await SelectDownloadFolder();
-      if (path) {
-        setLocalDownloadPath(path);
-      }
-    } catch (error) {
-      console.error('Error selecting folder:', error);
-    }
-  };
-
   const handleSave = () => {
     onSave({
-      downloadPath: localDownloadPath,
-      quality: localQuality,
       parallelDownloads: localParallelDownloads
     });
   };
 
   const handleCheckForUpdates = async () => {
     setUpdateState({ status: 'checking', message: 'Starting update check...' });
-    
+
     try {
       const result = await PerformFullUpdate();
-      
+
       const ytdlpResult = result.ytdlp as { success: boolean; message: string };
       const appResult = result.app as {
         success: boolean;
@@ -238,9 +219,9 @@ export function SettingsPanel({
                   {getStatusIcon()}
                   <span className={
                     updateState.status === 'error' ? 'text-red-400' :
-                    updateState.status === 'done' ? 'text-green-400' :
-                    updateState.status === 'update-available' ? 'text-yellow-400' :
-                    'text-gray-300'
+                      updateState.status === 'done' ? 'text-green-400' :
+                        updateState.status === 'update-available' ? 'text-yellow-400' :
+                          'text-gray-300'
                   }>
                     {updateState.message}
                   </span>
@@ -302,27 +283,6 @@ export function SettingsPanel({
           </div>
 
           <div>
-            <label className="text-gray-300 text-sm">Default Download Path</label>
-            <p className="text-gray-500 text-xs mb-2">Where files will be saved</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={localDownloadPath}
-                onChange={(e) => setLocalDownloadPath(e.target.value)}
-                className="flex-1 px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
-              />
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="border-[#262626] hover:bg-[#1f1f1f]"
-                onClick={handleSelectFolder}
-              >
-                <FolderOpen className="size-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div>
             <label className="text-gray-300 text-sm">Parallel Downloads</label>
             <p className="text-gray-500 text-xs mb-2">Number of simultaneous downloads</p>
             <select
@@ -336,24 +296,6 @@ export function SettingsPanel({
               <option value="4">4</option>
               <option value="5">5</option>
               <option value="10">10</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-gray-300 text-sm">Default Video Quality</label>
-            <p className="text-gray-500 text-xs mb-2">Preferred quality for downloads</p>
-            <select
-              value={localQuality}
-              onChange={(e) => setLocalQuality(e.target.value)}
-              className="w-full px-3 py-2 bg-[#1f1f1f] border border-[#262626] rounded text-sm text-gray-100"
-            >
-              <option value="360p">360p</option>
-              <option value="480p">480p</option>
-              <option value="720p">720p (HD)</option>
-              <option value="1080p">1080p (Full HD)</option>
-              <option value="1440p">1440p (2K)</option>
-              <option value="2160p">2160p (4K)</option>
-              <option value="best">Best Available</option>
             </select>
           </div>
         </div>

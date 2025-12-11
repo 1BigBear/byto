@@ -7,7 +7,8 @@ import { DownloadItem } from './components/DownloadItem';
 import { SettingsPanel } from './components/SettingsPanel';
 import { SupportPanel } from './components/SupportPanel';
 import { DependencyCheckDialog } from './components/DependencyCheckDialog';
-import { AddToQueue, GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, SelectDownloadFolder, GetDefaultDownloadPath, ShowInFolder } from '../wailsjs/go/main/App';
+import { AddMediaDialog } from './components/AddMediaDialog';
+import { GetQueue, RemoveFromQueue, StartDownloads, PauseDownloads, StartSingleDownload, PauseSingleDownload, GetSettings, UpdateSettings, SaveSettings, ShowInFolder } from '../wailsjs/go/main/App';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { domain } from '../wailsjs/go/models';
 import bytoLogo from 'figma:asset/e1c6c4d1df3cefc4435d7cc603c42e22f058f10f.png';
@@ -66,10 +67,10 @@ function formatBytes(bytes: number): string {
 function mediaToDownloadVideo(media: domain.Media): DownloadVideo {
     const downloaded = media.progress?.downloaded_bytes || 0;
     const total = media.total_bytes || 0;
-    const fileSize = total > 0 
+    const fileSize = total > 0
         ? `${formatBytes(downloaded)} / ${formatBytes(total)}`
         : downloaded > 0 ? formatBytes(downloaded) : '--';
-    
+
     return {
         id: media.id,
         url: media.url,
@@ -85,30 +86,22 @@ function mediaToDownloadVideo(media: domain.Media): DownloadVideo {
 export default function App() {
     const [urlInput, setUrlInput] = useState('');
     const [downloads, setDownloads] = useState<DownloadVideo[]>([]);
-    const [downloadPath, setDownloadPath] = useState('');
-    const [quality, setQuality] = useState('1080p');
     const [parallelDownloads, setParallelDownloads] = useState('3');
     const [showSettings, setShowSettings] = useState(false);
     const [showSupport, setShowSupport] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [showDependencyCheck, setShowDependencyCheck] = useState(true);
+    const [showAddMediaDialog, setShowAddMediaDialog] = useState(false);
+    const [pendingUrl, setPendingUrl] = useState('');
 
     // Load initial data from backend
     useEffect(() => {
         const initializeApp = async () => {
             try {
-                // Get default download path
-                const defaultPath = await GetDefaultDownloadPath();
-                setDownloadPath(defaultPath);
-
-                // Get current settings
+                // Get current settings (only parallel downloads now)
                 const settings = await GetSettings();
                 if (settings) {
-                    setQuality(qualityFromBackend[settings.quality] || '1080p');
                     setParallelDownloads(settings.parallel_downloads?.toString() || '3');
-                    if (settings.download_path) {
-                        setDownloadPath(settings.download_path);
-                    }
                 }
 
                 // Get current queue
@@ -128,20 +121,20 @@ export default function App() {
 
     // Set up event listeners for download progress and status updates
     useEffect(() => {
-        const unsubProgress = EventsOn('download_progress', (data: { 
-            id: string; 
+        const unsubProgress = EventsOn('download_progress', (data: {
+            id: string;
             title?: string;
             total_bytes?: number;
-            progress: domain.DownloadProgress 
+            progress: domain.DownloadProgress
         }) => {
             setDownloads(prev => prev.map(d => {
                 if (d.id === data.id) {
                     const downloaded = data.progress.downloaded_bytes || 0;
                     const total = data.total_bytes || 0;
-                    const fileSize = total > 0 
+                    const fileSize = total > 0
                         ? `${formatBytes(downloaded)} / ${formatBytes(total)}`
                         : downloaded > 0 ? formatBytes(downloaded) : d.fileSize;
-                    
+
                     return {
                         ...d,
                         fileName: data.title && data.title !== 'NA' && data.title !== '' ? data.title : d.fileName,
@@ -185,33 +178,26 @@ export default function App() {
         };
     }, []);
 
-    const handleAddUrl = async () => {
+    const handleAddUrl = () => {
         if (!urlInput.trim()) return;
-        
-        try {
-            // Open folder picker with default path pre-selected
-            const selectedPath = await SelectDownloadFolder();
-            if (!selectedPath) {
-                // User cancelled folder selection
-                return;
-            }
-            
-            const id = await AddToQueue(urlInput.trim(), selectedPath);
-            const newDownload: DownloadVideo = {
-                id,
-                url: urlInput,
-                fileName: 'Detecting...',
-                filePath: selectedPath,
-                progress: 0,
-                fileSize: '--',
-                status: 'pending',
-                logs: []
-            };
-            setDownloads([...downloads, newDownload]);
-            setUrlInput('');
-        } catch (error) {
-            console.error('Error adding URL to queue:', error);
-        }
+        setPendingUrl(urlInput.trim());
+        setShowAddMediaDialog(true);
+    };
+
+    const handleAddMediaSuccess = (id: string, quality: string, filePath: string) => {
+        const newDownload: DownloadVideo = {
+            id,
+            url: pendingUrl,
+            fileName: 'Detecting...',
+            filePath,
+            progress: 0,
+            fileSize: '--',
+            status: 'pending',
+            logs: []
+        };
+        setDownloads([...downloads, newDownload]);
+        setUrlInput('');
+        setPendingUrl('');
     };
 
     const handleToggleAll = async () => {
@@ -272,17 +258,6 @@ export default function App() {
         }
     };
 
-    const handleSelectFolder = async () => {
-        try {
-            const path = await SelectDownloadFolder();
-            if (path) {
-                setDownloadPath(path);
-            }
-        } catch (error) {
-            console.error('Error selecting folder:', error);
-        }
-    };
-
     const activeDownloads = downloads.filter(d => d.status === 'downloading').length;
 
     return (
@@ -323,20 +298,28 @@ export default function App() {
             {/* Settings Panel */}
             {showSettings && (
                 <SettingsPanel
-                    downloadPath={downloadPath}
-                    quality={quality}
                     parallelDownloads={parallelDownloads}
                     onClose={() => setShowSettings(false)}
                     onSave={async (settings) => {
                         const parallel = settings.parallelDownloads === 'unlimited' ? 100 : parseInt(settings.parallelDownloads, 10);
-                        await UpdateSettings(qualityToBackend[settings.quality] || settings.quality, parallel, settings.downloadPath);
+                        await UpdateSettings(parallel);
                         await SaveSettings();
-                        // Update local state only after successful save
-                        setDownloadPath(settings.downloadPath);
-                        setQuality(settings.quality);
                         setParallelDownloads(settings.parallelDownloads);
                         setShowSettings(false);
                     }}
+                />
+            )}
+
+            {/* Add Media Dialog */}
+            {showAddMediaDialog && (
+                <AddMediaDialog
+                    url={pendingUrl}
+                    open={showAddMediaDialog}
+                    onClose={() => {
+                        setShowAddMediaDialog(false);
+                        setPendingUrl('');
+                    }}
+                    onSuccess={handleAddMediaSuccess}
                 />
             )}
 

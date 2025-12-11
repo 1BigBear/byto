@@ -22,6 +22,7 @@ export namespace domain {
 	    total_bytes: number;
 	    url: string;
 	    file_path: string;
+	    quality: number;
 	    status: number;
 	    progress: DownloadProgress;
 	
@@ -36,6 +37,7 @@ export namespace domain {
 	        this.total_bytes = source["total_bytes"];
 	        this.url = source["url"];
 	        this.file_path = source["file_path"];
+	        this.quality = source["quality"];
 	        this.status = source["status"];
 	        this.progress = this.convertValues(source["progress"], DownloadProgress);
 	    }
@@ -58,10 +60,22 @@ export namespace domain {
 		    return a;
 		}
 	}
-	export class Setting {
+	export class MediaDefaults {
 	    quality: number;
-	    parallel_downloads: number;
 	    download_path: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MediaDefaults(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.quality = source["quality"];
+	        this.download_path = source["download_path"];
+	    }
+	}
+	export class Setting {
+	    parallel_downloads: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new Setting(source);
@@ -69,9 +83,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.quality = source["quality"];
 	        this.parallel_downloads = source["parallel_downloads"];
-	        this.download_path = source["download_path"];
 	    }
 	}
 

@@ -3,7 +3,7 @@
 import {updater} from '../models';
 import {domain} from '../models';
 
-export function AddToQueue(arg1:string,arg2:string):Promise<string>;
+export function AddToQueue(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function CheckAppUpdate():Promise<updater.UpdateResult>;
 
@@ -20,6 +20,8 @@ export function DownloadYtDlp():Promise<void>;
 export function GetAppVersion():Promise<string>;
 
 export function GetDefaultDownloadPath():Promise<string>;
+
+export function GetMediaDefaults():Promise<domain.MediaDefaults>;
 
 export function GetQueue():Promise<Array<domain.Media>>;
 
@@ -39,6 +41,8 @@ export function PerformFullUpdate():Promise<Record<string, any>>;
 
 export function RemoveFromQueue(arg1:string):Promise<void>;
 
+export function SaveMediaDefaults():Promise<void>;
+
 export function SaveSettings():Promise<void>;
 
 export function SelectDownloadFolder():Promise<string>;
@@ -51,6 +55,8 @@ export function StartDownloads():Promise<void>;
 
 export function StartSingleDownload(arg1:string):Promise<void>;
 
-export function UpdateSettings(arg1:string,arg2:number,arg3:string):Promise<void>;
+export function UpdateMediaDefaults(arg1:string,arg2:string):Promise<void>;
+
+export function UpdateSettings(arg1:number):Promise<void>;
 
 export function UpdateYTDLP():Promise<updater.UpdateResult>;

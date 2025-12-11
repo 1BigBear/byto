@@ -18,17 +18,19 @@ import (
 )
 
 type App struct {
-	ctx      context.Context
-	queue    *queue.Queue
-	settings *domain.Setting
-	updater  *updater.Updater
+	ctx           context.Context
+	queue         *queue.Queue
+	settings      *domain.Setting
+	mediaDefaults *domain.MediaDefaults
+	updater       *updater.Updater
 }
 
 func NewApp() *App {
 	return &App{
-		queue:    queue.NewQueue(),
-		settings: domain.NewSetting(),
-		updater:  updater.NewUpdater(),
+		queue:         queue.NewQueue(),
+		settings:      domain.NewSetting(),
+		mediaDefaults: domain.NewMediaDefaults(),
+		updater:       updater.NewUpdater(),
 	}
 }
 
@@ -45,26 +47,9 @@ func (a *App) GetSettings() *domain.Setting {
 	return a.settings
 }
 
-func (a *App) UpdateSettings(quality string, parallelDownloads int, downloadPath string) {
-	var q domain.VideoQuality
-	switch quality {
-	case "360p":
-		q = domain.Quality360p
-	case "480p":
-		q = domain.Quality480p
-	case "720p":
-		q = domain.Quality720p
-	case "1080p":
-		q = domain.Quality1080p
-	case "1440p":
-		q = domain.Quality1440p
-	case "2160p":
-		q = domain.Quality2160p
-	default:
-		q = domain.Quality1080p
-	}
-	a.settings.Update(q, parallelDownloads, downloadPath)
-	log.Printf("Settings updated in memory: quality=%s, parallel=%d, path=%s", quality, parallelDownloads, downloadPath)
+func (a *App) UpdateSettings(parallelDownloads int) {
+	a.settings.Update(parallelDownloads)
+	log.Printf("Settings updated in memory: parallel=%d", parallelDownloads)
 }
 
 func (a *App) SaveSettings() error {
@@ -78,7 +63,7 @@ func (a *App) SelectDownloadFolder() string {
 
 func (a *App) SelectDownloadFolderWithDefault(defaultPath string) string {
 	if defaultPath == "" {
-		defaultPath = a.settings.DownloadPath
+		defaultPath = a.mediaDefaults.DownloadPath
 	}
 	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
 		Title:            "Select Download Folder",
@@ -120,19 +105,72 @@ func (a *App) ShowInFolder(filePath string) {
 }
 
 func (a *App) GetDefaultDownloadPath() string {
-	if a.settings != nil {
-		return a.settings.DownloadPath
+	if a.mediaDefaults != nil {
+		return a.mediaDefaults.DownloadPath
 	}
 	return "./downloads"
 }
 
-func (a *App) AddToQueue(url string, customPath string) string {
+// GetMediaDefaults returns the current media defaults (quality and download path)
+func (a *App) GetMediaDefaults() *domain.MediaDefaults {
+	return a.mediaDefaults
+}
+
+// UpdateMediaDefaults updates the media defaults for new items
+func (a *App) UpdateMediaDefaults(quality string, downloadPath string) {
+	var q domain.VideoQuality
+	switch quality {
+	case "360p":
+		q = domain.Quality360p
+	case "480p":
+		q = domain.Quality480p
+	case "720p":
+		q = domain.Quality720p
+	case "1080p":
+		q = domain.Quality1080p
+	case "1440p":
+		q = domain.Quality1440p
+	case "2160p":
+		q = domain.Quality2160p
+	default:
+		q = domain.Quality1080p
+	}
+	a.mediaDefaults.Update(q, downloadPath)
+	log.Printf("Media defaults updated in memory: quality=%s, path=%s", quality, downloadPath)
+}
+
+// SaveMediaDefaults saves the media defaults to file
+func (a *App) SaveMediaDefaults() error {
+	log.Println("Saving media defaults to file")
+	return a.mediaDefaults.Save()
+}
+
+func (a *App) AddToQueue(url string, quality string, customPath string) string {
 	id := uuid.New().String()
 	log.Printf("Adding to queue: %s with id: %s", url, id)
 
-	filePath := a.settings.DownloadPath
+	filePath := a.mediaDefaults.DownloadPath
 	if customPath != "" {
 		filePath = customPath
+	}
+
+	// Convert quality string to VideoQuality
+	var q domain.VideoQuality
+	switch quality {
+	case "360p":
+		q = domain.Quality360p
+	case "480p":
+		q = domain.Quality480p
+	case "720p":
+		q = domain.Quality720p
+	case "1080p":
+		q = domain.Quality1080p
+	case "1440p":
+		q = domain.Quality1440p
+	case "2160p":
+		q = domain.Quality2160p
+	default:
+		q = domain.Quality1080p
 	}
 
 	a.queue.Add(&domain.Media{
@@ -140,6 +178,7 @@ func (a *App) AddToQueue(url string, customPath string) string {
 		URL:      url,
 		Title:    "Detecting...",
 		FilePath: filePath,
+		Quality:  q,
 		Status:   domain.Pending,
 		Progress: domain.DownloadProgress{
 			Percentage:      0,
@@ -231,10 +270,10 @@ func (a *App) StartDownloads() {
 				m.SetStatus(domain.InProgress)
 				log.Printf("Processing item: %s", m.URL)
 
-				// Initialize builder - use media's own FilePath, not current settings
+				// Initialize builder - use media's own FilePath and Quality
 				b := builder.NewYTDLPBuilder().
 					URL(m.URL).
-					Quality(a.settings.Quality).
+					Quality(m.Quality).
 					DownloadPath(m.FilePath).
 					SafeFilenames()
 
@@ -326,7 +365,7 @@ func (a *App) StartSingleDownload(id string) {
 
 		b := builder.NewYTDLPBuilder().
 			URL(media.URL).
-			Quality(a.settings.Quality).
+			Quality(media.Quality).
 			DownloadPath(media.FilePath).
 			SafeFilenames()
 

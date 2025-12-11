@@ -8,9 +8,7 @@ import (
 )
 
 type Setting struct {
-	Quality           VideoQuality `json:"quality"`
-	ParallelDownloads int          `json:"parallel_downloads"`
-	DownloadPath      string       `json:"download_path"`
+	ParallelDownloads int `json:"parallel_downloads"`
 }
 
 func getSettingsFilePath() string {
@@ -44,9 +42,7 @@ func NewSetting() *Setting {
 	}
 
 	return &Setting{
-		Quality:           Quality1080p,
 		ParallelDownloads: 1,
-		DownloadPath:      getDefaultDownloadPath(),
 	}
 }
 
@@ -87,8 +83,6 @@ func (s *Setting) Save() error {
 	return nil
 }
 
-func (s *Setting) Update(quality VideoQuality, parallelDownloads int, downloadPath string) {
-	s.Quality = quality
+func (s *Setting) Update(parallelDownloads int) {
 	s.ParallelDownloads = parallelDownloads
-	s.DownloadPath = downloadPath
 }

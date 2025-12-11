@@ -11,6 +11,7 @@ type Media struct {
 	TotalBytes int64            `json:"total_bytes"`
 	URL        string           `json:"url"`
 	FilePath   string           `json:"file_path"`
+	Quality    VideoQuality     `json:"quality"`
 	Status     DownloadStatus   `json:"status"`
 	Progress   DownloadProgress `json:"progress"`
 	mu         sync.Mutex
