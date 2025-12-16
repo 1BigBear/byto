@@ -1,6 +1,6 @@
 # byto
 
-> A modern, lightweight, and powerful GUI for [yt-dlp](https://github.com/yt-dlp/yt-dlp), designed to simplify video downloads.
+> A modern, lightweight, and powerful GUI for [yt-dlp](https://github.com/yt-dlp/yt-dlp), designed to simplify media downloads.
 
 ![byto wallpaper](/assets/bytologowallpaper.png)
 
