@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram_bot_api
+    environment:
+      TELEGRAM_API_ID: ${API_ID}
+      TELEGRAM_API_HASH: ${API_HASH}
+    volumes:
+      - telegram-data:/var/lib/telegram-bot-api
+    ports:
+      - "8081:8081"
+
+  byto-bot:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: byto_bot
+    environment:
+      BOT_API_URL: http://telegram_bot_api:8081
+      BOT_TOKEN: ${BOT_TOKEN}
+      OWNER_ID: ${OWNER_ID}
+    depends_on:
+      - telegram-bot-api
+
+volumes:
+  telegram-data:
